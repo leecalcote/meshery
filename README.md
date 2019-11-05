@@ -59,7 +59,7 @@ This project is community-built and welcomes collaboration! See the <a href="htt
 *Not sure where to start?* Grab an open issue with the [help-wanted label](../../labels/help%20wanted).
 
 ## More about Meshery
-
+<table border="0"><tr><td width="50%">
 - [Functionality](#functionality)
 - [Running Meshery](#running)
   - [Quick start](https://layer5.io/meshery/#getting-started)
@@ -68,14 +68,12 @@ This project is community-built and welcomes collaboration! See the <a href="htt
     - [Architecture](https://drive.google.com/open?id=1SQMfyu5shjpGKlYONdVzOtd7UYTgLWBcgUvHMLCZ2tY)
 - [Contributing](CONTRIBUTING.md/#contributing)
   - [Write an adapter](CONTRIBUTING.md/#adapter)
-  - [Build the project](CONTRIBUTING.md/#building)
-  
+  - [Build the project](CONTRIBUTING.md/#building)</td><td align="center">
+  <i>If you’re using Meshery or if you like the project, please ★ star this repository to show your support! 🤩</i>
+<a href="../../stargazers"><img align="center" src="https://starchart.cc/layer5io/meshery.svg" width="400" height="400" /></a></td></tr></table>
 ## License
 
 This repository and site are available as open source under the terms of the [Apache 2.0 License](https://opensource.org/licenses/Apache-2.0).
-
-<table><tr><td width="25%"><i>If you’re using Meshery or if you like the project, please ★ star this repository to show your support! 🤩</i></td><td>
-<a href="../../stargazers"><img align="left" src="https://starchart.cc/layer5io/meshery.svg" width="400" height="400" /></a></td></tr></table>
 
 **About Layer5**
 
