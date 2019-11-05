@@ -13,7 +13,7 @@ A multi-mesh management plane with initial functionality as a playground to faci
   
 In an effort to produce service mesh agnostic tooling, Meshery uses a [common performance benchmark specification](https://github.com/layer5io/service-mesh-benchmark-spec) to capture and share environment information and test configuration. As a Service Mesh Interface (SMI) partner, Meshery participates in advancing service mesh adoption through standardization of APIs.
  
-<p align="left"><a href="../../stargazers"><img align="left" src="https://starchart.cc/layer5io/meshery.svg" width="400" height="400" /><i>If you’re using Meshery or if you like the project, please ★ star this repository to show your support! 🤩</i>
+<p align="left"><a href="../../stargazers"><img src="https://starchart.cc/layer5io/meshery.svg" width="400" height="400" /><i>If you’re using Meshery or if you like the project, please ★ star this repository to show your support! 🤩</i>
 </a></p>
 
 
