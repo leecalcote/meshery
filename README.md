@@ -9,7 +9,7 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/layer5.svg?label=Follow&style=social)](https://twitter.com/intent/follow?screen_name=mesheryio)
 [![Slack](http://slack.layer5.io/badge.svg)](http://slack.layer5.io)
 
-<a href="/stargazers"><img src="https://starchart.cc/layer5io/meshery.svg" width="300" height="200">
+<a href="../../stargazers"><img src="https://starchart.cc/layer5io/meshery.svg" width="400" height="200">
 </a>
 
 A multi-mesh management plane with initial functionality as a playground to faciliate learning about functionality and performance of different service meshes. [Meshery](https://layer5.io/meshery) also serves as a service mesh performance benchmark.
