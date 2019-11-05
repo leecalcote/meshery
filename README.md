@@ -78,9 +78,9 @@ This project is community-built and welcomes collaboration! See the <a href="htt
   <i>If you’re using Meshery or if you like the project, please <a href="../../stargazers">★</a> star this repository to show your support! 🤩</i>
 <a href="../../stargazers"><img align="center" src="https://starchart.cc/layer5io/meshery.svg" /></a></p>
 
-<button type="submit" class="btn btn-sm btn-with-count js-toggler-target" aria-label="Unstar this repository" title="Star leecalcote/meshery" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;STAR_BUTTON&quot;,&quot;repository_id&quot;:219773201,&quot;client_id&quot;:&quot;2026749041.1564006892&quot;,&quot;originating_request_id&quot;:&quot;B734:4EA6:270D004:3DC9A17:5DC1C2B7&quot;,&quot;originating_url&quot;:&quot;https://github.com/leecalcote/meshery/edit/master/README.md&quot;,&quot;referrer&quot;:&quot;https://github.com/leecalcote/meshery/blob/master/README.md&quot;,&quot;user_id&quot;:7570704}}" data-hydro-click-hmac="68139c98ba29ed43e7c48d63dde40a494f7a3d674cbd3849d0e77d4815bc1415" data-ga-click="Repository, click star button, action:blob#edit; text:Star">        <svg class="octicon octicon-star v-align-text-bottom" viewBox="0 0 14 16" version="1.1" width="14" height="16" aria-hidden="true"><path fill-rule="evenodd" d="M14 6l-4.9-.64L7 1 4.9 5.36 0 6l3.6 3.26L2.67 14 7 11.67 11.33 14l-.93-4.74L14 6z"></path></svg>
+<a type="submit" class="btn btn-sm btn-with-count js-toggler-target" aria-label="Unstar this repository" title="Star leecalcote/meshery" data-hydro-click="{&quot;event_type&quot;:&quot;repository.click&quot;,&quot;payload&quot;:{&quot;target&quot;:&quot;STAR_BUTTON&quot;,&quot;repository_id&quot;:219773201,&quot;client_id&quot;:&quot;2026749041.1564006892&quot;,&quot;originating_request_id&quot;:&quot;B734:4EA6:270D004:3DC9A17:5DC1C2B7&quot;,&quot;originating_url&quot;:&quot;https://github.com/leecalcote/meshery/edit/master/README.md&quot;,&quot;referrer&quot;:&quot;https://github.com/leecalcote/meshery/blob/master/README.md&quot;,&quot;user_id&quot;:7570704}}" data-hydro-click-hmac="68139c98ba29ed43e7c48d63dde40a494f7a3d674cbd3849d0e77d4815bc1415" data-ga-click="Repository, click star button, action:blob#edit; text:Star">
         Star
-</button>
+</a>
 
 ## License
 
