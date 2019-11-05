@@ -71,6 +71,10 @@ This project is community-built and welcomes collaboration! See the <a href="htt
   - [Build the project](CONTRIBUTING.md/#building)</td><td align="center">
   <i>If you’re using Meshery or if you like the project, please ★ star this repository to show your support! 🤩</i>
 <a href="../../stargazers"><img align="center" src="https://starchart.cc/layer5io/meshery.svg" width="400" height="400" /></a></td></tr></table>
+
+<p align="center">
+  <i>If you’re using Meshery or if you like the project, please ★ star this repository to show your support! 🤩</i>
+<a href="../../stargazers"><img align="center" src="https://starchart.cc/layer5io/meshery.svg" width="600" height="600" /></a></p>
 ## License
 
 This repository and site are available as open source under the terms of the [Apache 2.0 License](https://opensource.org/licenses/Apache-2.0).
