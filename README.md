@@ -9,6 +9,10 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/layer5.svg?label=Follow&style=social)](https://twitter.com/intent/follow?screen_name=mesheryio)
 [![Slack](http://slack.layer5.io/badge.svg)](http://slack.layer5.io)
 
+<p width="50%">
+[![Stargazers over time](https://starchart.cc/layer5io/meshery.svg)](https://starchart.cc/layer5io/meshery)</p>
+
+
 A multi-mesh management plane with initial functionality as a playground to faciliate learning about functionality and performance of different service meshes. [Meshery](https://layer5.io/meshery) also serves as a service mesh performance benchmark.
   
 In an effort to produce service mesh agnostic tooling, Meshery uses a [common performance benchmark specification](https://github.com/layer5io/service-mesh-benchmark-spec) to capture and share environment information and test configuration. As a Service Mesh Interface (SMI) partner, Meshery participates in advancing service mesh adoption through standardization of APIs.
