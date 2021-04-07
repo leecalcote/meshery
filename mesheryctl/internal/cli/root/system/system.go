@@ -1,4 +1,4 @@
-// Copyright 2019 The Meshery Authors
+// Copyright 2020 Layer5, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,18 +17,19 @@ package system
 import (
 	"fmt"
 
+	config "github.com/layer5io/meshery/mesheryctl/internal/cli/root/config"
+	"github.com/layer5io/meshery/mesheryctl/internal/cli/root/system/context"
+
 	"github.com/layer5io/meshery/mesheryctl/pkg/utils"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-)
-
-const (
-	url     = "http://localhost:9081"
-	fileURL = "https://raw.githubusercontent.com/layer5io/meshery/master/docker-compose.yaml"
+	"github.com/spf13/viper"
 )
 
 var (
 	availableSubcommands = []*cobra.Command{}
+	// flag to change the current context to a temporary context
+	tempContext = ""
 )
 
 // SystemCmd represents Meshery Lifecycle Management cli commands
@@ -41,6 +42,11 @@ var SystemCmd = &cobra.Command{
 		if ok := utils.IsValidSubcommand(availableSubcommands, args[0]); !ok {
 			return errors.New(utils.SystemError(fmt.Sprintf("invalid command: \"%s\"", args[0])))
 		}
+		mctlCfg, err := config.GetMesheryCtl(viper.GetViper())
+		if err != nil {
+			return errors.Wrap(err, "error processing config")
+		}
+		mctlCfg.GetBaseMesheryURL()
 		return nil
 	},
 }
@@ -55,6 +61,12 @@ func init() {
 		statusCmd,
 		updateCmd,
 		configCmd,
+		context.ContextCmd,
+		completionCmd,
+		channelCmd,
 	}
+	// --context flag to temporarily change context. This is global to all system commands
+	SystemCmd.PersistentFlags().StringVarP(&tempContext, "context", "c", "", "(optional) temporarily change the current context.")
+	SystemCmd.PersistentFlags().BoolVarP(&utils.SilentFlag, "yes", "y", false, "(optional) assume yes for user interactive prompts.")
 	SystemCmd.AddCommand(availableSubcommands...)
 }

@@ -14,6 +14,7 @@ import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
 import {
   updateResultsSelection, clearResultsSelection, updateProgress,
 } from '../lib/store';
+import TableSortLabel from '@material-ui/core/TableSortLabel'
 import dataFetch from '../lib/data-fetch';
 import CustomToolbarSelect from './CustomToolbarSelect';
 import MesheryChart from './MesheryChart';
@@ -80,12 +81,14 @@ class MesheryResults extends Component {
       }
       query = `?page=${page}&pageSize=${pageSize}&search=${encodeURIComponent(search)}&order=${encodeURIComponent(sortOrder)}`;
       self.props.updateProgress({ showProgress: true });
-      dataFetch(`/api/perf/results${query}`, {
+
+      const endpoint = self.props.endpoint || "/api/perf/results";
+      dataFetch(`${endpoint}${query}`, {
         credentials: 'same-origin',
         method: 'GET',
         credentials: 'include',
       }, (result) => {
-        console.log("Results API",`/api/perf/results${query}`)
+        console.log("Results API",`${endpoint}${query}`)
         self.props.updateProgress({ showProgress: false });
         // console.log(`received results: ${JSON.stringify(result)}`);
         if (typeof result !== 'undefined') {
@@ -167,10 +170,12 @@ class MesheryResults extends Component {
             filter: false,
             sort: true,
             searchable: true,
-            customHeadRender: ({index, ...column}) => {
+            customHeadRender: ({index, ...column}, sortColumn) => {
               return (
-                <TableCell key={index}>
-                  <b>{column.label}</b>
+                <TableCell key={index} onClick={() => sortColumn(index)}>
+                  <TableSortLabel active={column.sortDirection != null} direction={column.sortDirection || "asc" }>
+                    <b>{column.label}</b>
+                  </TableSortLabel>
                 </TableCell>
               )
             },
@@ -183,10 +188,12 @@ class MesheryResults extends Component {
             filter: false,
             sort: true,
             searchable: true,
-            customHeadRender: ({index, ...column}) => {
+            customHeadRender: ({index, ...column}, sortColumn) => {
               return (
-                <TableCell key={index}>
-                  <b>{column.label}</b>
+                <TableCell key={index} onClick={() => sortColumn(index)}>
+                  <TableSortLabel active={column.sortDirection != null} direction={column.sortDirection || "asc" }>
+                    <b>{column.label}</b>
+                  </TableSortLabel>
                 </TableCell>
               )
             },
@@ -194,15 +201,17 @@ class MesheryResults extends Component {
         },
         {
           name: 'test_start_time',
-          label: 'StartTime',
+          label: 'Start Time',
           options: {
             filter: false,
             sort: true,
-            searchable: false,
-            customHeadRender: ({index, ...column}) => {
+            searchable: true,
+            customHeadRender: ({index, ...column}, sortColumn) => {
               return (
-                <TableCell key={index}>
-                  <b>{column.label}</b>
+                <TableCell key={index} onClick={() => sortColumn(index)}>
+                  <TableSortLabel active={column.sortDirection != null} direction={column.sortDirection || "asc" }>
+                    <b>{column.label}</b>
+                  </TableSortLabel>
                 </TableCell>
               )
             },
@@ -321,7 +330,8 @@ class MesheryResults extends Component {
           });
         } else {
           Object.keys(results_selection[page]).forEach((ind) => {
-            rowsSelected.push(ind);
+            const val = parseInt(ind)
+            rowsSelected.push(val);
           });
         }
       });
@@ -442,7 +452,12 @@ class MesheryResults extends Component {
                   close={self.resetSelectedRowData()}
                 />
               )}
-          <MUIDataTable title={<div className={classes.tableHeader}>Performance Test Results</div>} data={resultsForDisplay} columns={columns} options={options} />
+          <MUIDataTable 
+            title={this.props.customHeader || <div className={classes.tableHeader}>Performance Test Results</div>} 
+            data={resultsForDisplay} 
+            columns={columns} 
+            options={options} 
+          />
         </NoSsr>
       );
     }

@@ -10,47 +10,81 @@ import (
 	"strconv"
 
 	"github.com/gofrs/uuid"
+	"github.com/layer5io/meshkit/database"
+	mesherykube "github.com/layer5io/meshkit/utils/kubernetes"
+	"github.com/layer5io/meshsync/pkg/model"
 	SMP "github.com/layer5io/service-mesh-performance/spec"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 // DefaultLocalProvider - represents a local provider
 type DefaultLocalProvider struct {
 	*MapPreferencePersister
-	SaaSBaseURL           string
-	ResultPersister       *BitCaskResultsPersister
-	SmiResultPersister    *BitCaskSmiResultsPersister
-	TestProfilesPersister *BitCaskTestProfilesPersister
+	ProviderProperties
+	ProviderBaseURL              string
+	ResultPersister              *MesheryResultsPersister
+	SmiResultPersister           *BitCaskSmiResultsPersister
+	TestProfilesPersister        *BitCaskTestProfilesPersister
+	PerformanceProfilesPersister *PerformanceProfilePersister
+	MesheryPatternPersister      *MesheryPatternPersister
+	GenericPersister             database.Handler
+	GraphqlHandler               http.Handler
+	GraphqlPlayground            http.Handler
+	KubeClient                   *mesherykube.Client
+}
+
+// Initialize will initialize the local provider
+func (l *DefaultLocalProvider) Initialize() {
+	l.ProviderName = "None"
+	l.ProviderDescription = []string{
+		"Ephemeral sessions",
+		"Environment setup not saved",
+		"No performance test result history",
+		"Free Use",
+	}
+	l.ProviderType = LocalProviderType
+	l.PackageVersion = viper.GetString("BUILD")
+	l.PackageURL = ""
+	l.Extensions = Extensions{}
+	l.Capabilities = Capabilities{
+		{Feature: PersistMesheryPatterns},
+	}
 }
 
 // Name - Returns Provider's friendly name
 func (l *DefaultLocalProvider) Name() string {
-	return "None"
+	return l.ProviderName
 }
 
 // Description - returns a short description of the provider for display in the Provider UI
-func (l *DefaultLocalProvider) Description() string {
-	return `Provider: None
-	- ephemeral sessions
-	- environment setup not saved
-	- no performance test result history
-	- free use`
+func (l *DefaultLocalProvider) Description() []string {
+	return l.ProviderDescription
 }
 
 // GetProviderType - Returns ProviderType
 func (l *DefaultLocalProvider) GetProviderType() ProviderType {
-	return LocalProviderType
+	return l.ProviderType
 }
 
 // GetProviderProperties - Returns all the provider properties required
 func (l *DefaultLocalProvider) GetProviderProperties() ProviderProperties {
-	var result ProviderProperties
-	result.ProviderType = l.GetProviderType()
-	result.DisplayName = l.Name()
-	result.Description = l.Description()
-	result.Capabilities = make([]Capability, 0)
-	return result
+	return l.ProviderProperties
+}
+
+// PackageLocation returns an empty string as there is no extension package for
+// the local provider
+func (l *DefaultLocalProvider) PackageLocation() string {
+	return ""
+}
+
+// GetProviderCapabilities returns all of the provider properties
+func (l *DefaultLocalProvider) GetProviderCapabilities(w http.ResponseWriter, r *http.Request) {
+	encoder := json.NewEncoder(w)
+	if err := encoder.Encode(l.ProviderProperties); err != nil {
+		http.Error(w, "failed to encode provider capabilities", http.StatusInternalServerError)
+	}
 }
 
 // InitiateLogin - initiates login flow and returns a true to indicate the handler to "return" or false to continue
@@ -99,7 +133,7 @@ func (l *DefaultLocalProvider) Logout(w http.ResponseWriter, req *http.Request) 
 }
 
 // FetchResults - fetches results from provider backend
-func (l *DefaultLocalProvider) FetchResults(req *http.Request, page, pageSize, search, order string) ([]byte, error) {
+func (l *DefaultLocalProvider) FetchResults(req *http.Request, page, pageSize, search, order, profileID string) ([]byte, error) {
 	pg, err := strconv.ParseUint(page, 10, 32)
 	if err != nil {
 		err = errors.Wrapf(err, "unable to parse page number")
@@ -112,7 +146,31 @@ func (l *DefaultLocalProvider) FetchResults(req *http.Request, page, pageSize, s
 		logrus.Error(err)
 		return nil, err
 	}
-	return l.ResultPersister.GetResults(pg, pgs)
+	return l.ResultPersister.GetResults(pg, pgs, profileID)
+}
+
+// FetchResults - fetches results from provider backend
+func (l *DefaultLocalProvider) FetchAllResults(req *http.Request, page, pageSize, search, order, from, to string) ([]byte, error) {
+	if page == "" {
+		page = "0"
+	}
+	if pageSize == "" {
+		pageSize = "10"
+	}
+	pg, err := strconv.ParseUint(page, 10, 32)
+	if err != nil {
+		err = errors.Wrapf(err, "unable to parse page number")
+		logrus.Error(err)
+		return nil, err
+	}
+	pgs, err := strconv.ParseUint(pageSize, 10, 32)
+	if err != nil {
+		err = errors.Wrapf(err, "unable to parse page size")
+		logrus.Error(err)
+		return nil, err
+	}
+
+	return l.ResultPersister.GetAllResults(pg, pgs)
 }
 
 // GetResult - fetches result from provider backend for the given result id
@@ -125,7 +183,14 @@ func (l *DefaultLocalProvider) GetResult(req *http.Request, resultID uuid.UUID) 
 }
 
 // PublishResults - publishes results to the provider backend synchronously
-func (l *DefaultLocalProvider) PublishResults(req *http.Request, result *MesheryResult) (string, error) {
+func (l *DefaultLocalProvider) PublishResults(req *http.Request, result *MesheryResult, profileID string) (string, error) {
+	profileUUID, err := uuid.FromString(profileID)
+	if err != nil {
+		logrus.Error(errors.Wrap(err, "error - invalid performance profile id"))
+		return "", err
+	}
+
+	result.PerformanceProfile = &profileUUID
 	data, err := json.Marshal(result)
 	if err != nil {
 		logrus.Error(errors.Wrap(err, "error - unable to marshal meshery result for shipping"))
@@ -194,8 +259,8 @@ func (l *DefaultLocalProvider) PublishSmiResults(result *SmiResult) (string, err
 
 func (l *DefaultLocalProvider) shipResults(req *http.Request, data []byte) (string, error) {
 	bf := bytes.NewBuffer(data)
-	saasURL, _ := url.Parse(l.SaaSBaseURL + "/result")
-	cReq, _ := http.NewRequest(http.MethodPost, saasURL.String(), bf)
+	remoteProviderURL, _ := url.Parse(l.ProviderBaseURL + "/result")
+	cReq, _ := http.NewRequest(http.MethodPost, remoteProviderURL.String(), bf)
 	cReq.Header.Set("X-API-Key", GlobalTokenForAnonymousResults)
 	c := &http.Client{}
 	resp, err := c.Do(cReq)
@@ -213,7 +278,7 @@ func (l *DefaultLocalProvider) shipResults(req *http.Request, data []byte) (stri
 		return "", nil
 	}
 	if resp.StatusCode == http.StatusCreated {
-		// logrus.Infof("results successfully published to SaaS")
+		// logrus.Infof("results successfully published to reomote provider")
 		idMap := map[string]string{}
 		if err = json.Unmarshal(bdr, &idMap); err != nil {
 			logrus.Warnf("unable to unmarshal body: %v", err)
@@ -240,8 +305,8 @@ func (l *DefaultLocalProvider) PublishMetrics(_ string, result *MesheryResult) e
 	logrus.Debugf("Result: %s, size: %d", data, len(data))
 	bf := bytes.NewBuffer(data)
 
-	saasURL, _ := url.Parse(l.SaaSBaseURL + "/result/metrics")
-	cReq, _ := http.NewRequest(http.MethodPut, saasURL.String(), bf)
+	remoteProviderURL, _ := url.Parse(l.ProviderBaseURL + "/result/metrics")
+	cReq, _ := http.NewRequest(http.MethodPut, remoteProviderURL.String(), bf)
 	cReq.Header.Set("X-API-Key", GlobalTokenForAnonymousResults)
 	c := &http.Client{}
 	resp, err := c.Do(cReq)
@@ -250,7 +315,7 @@ func (l *DefaultLocalProvider) PublishMetrics(_ string, result *MesheryResult) e
 		return nil
 	}
 	if resp.StatusCode == http.StatusOK {
-		logrus.Infof("metrics successfully published to SaaS")
+		logrus.Infof("metrics successfully published to remote provider")
 		return nil
 	}
 	defer func() {
@@ -341,4 +406,205 @@ func (l *DefaultLocalProvider) SMPTestConfigDelete(req *http.Request, testUUID s
 		return err
 	}
 	return l.TestProfilesPersister.DeleteTestConfig(uid)
+}
+
+// SaveMesheryPattern saves given pattern with the provider
+func (l *DefaultLocalProvider) SaveMesheryPattern(tokenString string, pattern *MesheryPattern) ([]byte, error) {
+	return l.MesheryPatternPersister.SaveMesheryPattern(pattern)
+}
+
+// GetMesheryPatterns gives the patterns stored with the provider
+func (l *DefaultLocalProvider) GetMesheryPatterns(req *http.Request, page, pageSize, search, order string) ([]byte, error) {
+	if page == "" {
+		page = "0"
+	}
+	if pageSize == "" {
+		pageSize = "10"
+	}
+
+	pg, err := strconv.ParseUint(page, 10, 32)
+	if err != nil {
+		err = errors.Wrapf(err, "unable to parse page number")
+		logrus.Error(err)
+		return nil, err
+	}
+
+	pgs, err := strconv.ParseUint(pageSize, 10, 32)
+	if err != nil {
+		err = errors.Wrapf(err, "unable to parse page size")
+		logrus.Error(err)
+		return nil, err
+	}
+
+	return l.MesheryPatternPersister.GetMesheryPatterns(search, order, pg, pgs)
+}
+
+// GetMesheryPattern gets pattern for the given patternID
+func (l *DefaultLocalProvider) GetMesheryPattern(req *http.Request, patternID string) ([]byte, error) {
+	id := uuid.FromStringOrNil(patternID)
+	return l.MesheryPatternPersister.GetMesheryPattern(id)
+}
+
+// DeleteMesheryPattern deletes a meshery pattern with the given id
+func (l *DefaultLocalProvider) DeleteMesheryPattern(req *http.Request, patternID string) ([]byte, error) {
+	id := uuid.FromStringOrNil(patternID)
+	return l.MesheryPatternPersister.DeleteMesheryPattern(id)
+}
+
+// SavePerformanceProfile saves given performance profile with the provider
+func (l *DefaultLocalProvider) SavePerformanceProfile(tokenString string, performanceProfile *PerformanceProfile) ([]byte, error) {
+	var uid uuid.UUID
+	if performanceProfile.ID != nil {
+		uid = *performanceProfile.ID
+	} else {
+		var err error
+		uid, err = uuid.NewV4()
+		if err != nil {
+			logrus.Error(errors.Wrap(err, "error - unable to generate new UUID"))
+			return nil, err
+		}
+		performanceProfile.ID = &uid
+	}
+
+	data, err := json.Marshal(performanceProfile)
+	if err != nil {
+		logrus.Error(errors.Wrap(err, "error - unable to marshal performance profile for persisting"))
+		return nil, err
+	}
+
+	return data, l.PerformanceProfilesPersister.SavePerformanceProfile(uid, performanceProfile)
+}
+
+// GetPerformanceProfiles gives the performance profiles stored with the provider
+func (l *DefaultLocalProvider) GetPerformanceProfiles(req *http.Request, page, pageSize, search, order string) ([]byte, error) {
+	if page == "" {
+		page = "0"
+	}
+	if pageSize == "" {
+		pageSize = "10"
+	}
+
+	pg, err := strconv.ParseUint(page, 10, 32)
+	if err != nil {
+		err = errors.Wrapf(err, "unable to parse page number")
+		logrus.Error(err)
+		return nil, err
+	}
+
+	pgs, err := strconv.ParseUint(pageSize, 10, 32)
+	if err != nil {
+		err = errors.Wrapf(err, "unable to parse page size")
+		logrus.Error(err)
+		return nil, err
+	}
+
+	return l.PerformanceProfilesPersister.GetPerformanceProfiles("", "", "", pg, pgs)
+}
+
+// GetPerformanceProfile gets performance profile for the given performance profileID
+func (l *DefaultLocalProvider) GetPerformanceProfile(req *http.Request, performanceProfileID string) ([]byte, error) {
+	uid, err := uuid.FromString(performanceProfileID)
+	if err != nil {
+		logrus.Error(errors.Wrap(err, "error - unable to generate new UUID"))
+		return nil, err
+	}
+
+	profile, err := l.PerformanceProfilesPersister.GetPerformanceProfile(uid)
+	if err != nil {
+		logrus.Error(errors.Wrap(err, "error - unable to get performance profile"))
+		return nil, err
+	}
+
+	profileJSON, err := json.Marshal(profile)
+	if err != nil {
+		logrus.Error(errors.Wrap(err, "error - unable to marshal performance profile"))
+		return nil, err
+	}
+
+	return profileJSON, nil
+}
+
+// DeletePerformanceProfile deletes a meshery performance profile with the given id
+func (l *DefaultLocalProvider) DeletePerformanceProfile(req *http.Request, performanceProfileID string) ([]byte, error) {
+	uid, err := uuid.FromString(performanceProfileID)
+	if err != nil {
+		logrus.Error(errors.Wrap(err, "error - unable to generate new UUID"))
+		return nil, err
+	}
+
+	return l.PerformanceProfilesPersister.DeletePerformanceProfile(uid)
+}
+
+// SaveSchedule saves a schedule
+func (l *DefaultLocalProvider) SaveSchedule(tokenString string, schedule *Schedule) ([]byte, error) {
+	return []byte{}, fmt.Errorf("function not supported by local provider")
+}
+
+// GetSchedules gets the schedules stored by the current user
+func (l *DefaultLocalProvider) GetSchedules(req *http.Request, page, pageSize, order string) ([]byte, error) {
+	return []byte{}, fmt.Errorf("function not supported by local provider")
+}
+
+// GetSchedule gets a schedule with the given id
+func (l *DefaultLocalProvider) GetSchedule(req *http.Request, scheduleID string) ([]byte, error) {
+	return []byte{}, fmt.Errorf("function not supported by local provider")
+}
+
+// DeleteSchedule deletes a schedule with the given id
+func (l *DefaultLocalProvider) DeleteSchedule(req *http.Request, scheduleID string) ([]byte, error) {
+	return []byte{}, fmt.Errorf("function not supported by local provider")
+}
+
+// RecordMeshSyncData records the mesh sync data
+func (l *DefaultLocalProvider) RecordMeshSyncData(obj model.Object) error {
+	result := l.GenericPersister.Create(&obj)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	return nil
+}
+
+// ReadMeshSyncData reads the mesh sync data
+func (l *DefaultLocalProvider) ReadMeshSyncData() ([]model.Object, error) {
+	objects := make([]model.Object, 0)
+	result := l.GenericPersister.
+		Preload("TypeMeta").
+		Preload("ObjectMeta").
+		Preload("ObjectMeta.Labels").
+		Preload("ObjectMeta.Annotations").
+		Preload("Spec").
+		Preload("Status").
+		Find(&objects)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return objects, nil
+}
+
+// GetGenericPersister - to return persister
+func (l *DefaultLocalProvider) GetGenericPersister() *database.Handler {
+	return &l.GenericPersister
+}
+
+// GetGraphqlHandler - to return graphql handler instance
+func (l *DefaultLocalProvider) GetGraphqlHandler() http.Handler {
+	return l.GraphqlHandler
+}
+
+// GetGraphqlPlayground - to return graphql playground instance
+func (l *DefaultLocalProvider) GetGraphqlPlayground() http.Handler {
+	return l.GraphqlPlayground
+}
+
+// SetKubeClient - to set meshery kubernetes client
+func (l *DefaultLocalProvider) SetKubeClient(client *mesherykube.Client) {
+	l.KubeClient = client
+}
+
+// GetKubeClient - to get meshery kubernetes client
+func (l *DefaultLocalProvider) GetKubeClient() *mesherykube.Client {
+	return l.KubeClient
 }
