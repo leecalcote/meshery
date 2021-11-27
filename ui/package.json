@@ -76,7 +76,7 @@
     "path-parse": "^1.0.7",
     "prop-types": "latest",
     "react": "^16.14.0",
-    "react-big-calendar": "^0.35.0",
+    "react-big-calendar": "^0.38.1",
     "react-codemirror2": "^7.2.1",
     "react-countdown-clock": "^2.6.0",
     "react-dom": "^16.12.0",
