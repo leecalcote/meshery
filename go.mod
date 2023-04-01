@@ -49,7 +49,7 @@ require (
 	github.com/pkg/browser v0.0.0-20210706143420-7d21f8c997e2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.14.0
-	github.com/prometheus/common v0.37.0
+	github.com/prometheus/common v0.42.0
 	github.com/qri-io/jsonschema v0.2.1
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.6.1
@@ -57,8 +57,8 @@ require (
 	github.com/spf13/viper v1.15.0
 	github.com/vektah/gqlparser/v2 v2.4.5
 	github.com/vmihailenco/taskq/v3 v3.2.9
-	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783
-	golang.org/x/text v0.6.0
+	golang.org/x/oauth2 v0.5.0
+	golang.org/x/text v0.7.0
 	gonum.org/v1/gonum v0.12.0
 	google.golang.org/grpc v1.52.0
 	google.golang.org/protobuf v1.28.1
@@ -223,10 +223,10 @@ require (
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/mod v0.7.0 // indirect
-	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
-	golang.org/x/sys v0.4.0 // indirect
-	golang.org/x/term v0.4.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/term v0.5.0 // indirect
 	golang.org/x/time v0.1.0 // indirect
 	golang.org/x/tools v0.5.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
